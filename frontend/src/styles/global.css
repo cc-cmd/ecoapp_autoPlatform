@@ -1,0 +1,77 @@
+/* CSS Reset */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* CSS Custom Properties */
+:root {
+  --primary-color: #1890ff;
+  --bg-color: #f0f2f5;
+  --text-color: #333333;
+  --sidebar-bg: #001529;
+  --header-bg: #ffffff;
+}
+
+/* Body Styling */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Full Page Layout */
+.full-page {
+  min-height: 100vh;
+}
+
+/* Scrollable Table Container */
+.scrollable-table {
+  overflow: auto;
+}
+
+/* Log Viewer Container */
+.log-container {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  padding: 16px;
+  border-radius: 6px;
+  max-height: 600px;
+  overflow: auto;
+}
+
+/* Stat Card Trend Colors */
+.stat-card-trend-up {
+  color: #52c41a;
+}
+
+.stat-card-trend-down {
+  color: #ff4d4f;
+}
+
+/* Smooth Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
