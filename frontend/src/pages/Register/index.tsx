@@ -56,12 +56,9 @@ const RegisterPage: React.FC = () => {
       message.success('注册成功！请前往登录');
       form.resetFields();
     } catch (error: unknown) {
-      // Error message from API is handled by React Query global onError,
-      // but register doesn't use React Query so handle manually
-      const axiosError = error as { response?: { data?: { message?: string; error?: string } } };
+      const axiosError = error as { response?: { data?: { message?: string } } };
       const errMsg =
         axiosError.response?.data?.message ||
-        axiosError.response?.data?.error ||
         '注册失败，请稍后重试';
       message.error(errMsg);
     } finally {
@@ -128,6 +125,7 @@ const RegisterPage: React.FC = () => {
               placeholder="请输入用户名（3-64字符）"
               size="large"
               autoFocus
+              disabled={loading}
             />
           </Form.Item>
 
@@ -140,6 +138,7 @@ const RegisterPage: React.FC = () => {
               prefix={<LockOutlined />}
               placeholder="请输入密码（至少8位，含字母和数字）"
               size="large"
+              disabled={loading}
             />
           </Form.Item>
 
@@ -163,6 +162,7 @@ const RegisterPage: React.FC = () => {
               prefix={<LockOutlined />}
               placeholder="请再次输入密码"
               size="large"
+              disabled={loading}
             />
           </Form.Item>
 

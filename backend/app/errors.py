@@ -18,6 +18,7 @@ class ServiceError(Exception):
 
     status_code: int = 500
     message: str = "Internal server error"
+    error_type: str = "InternalError"
 
     def __init__(self, message: str | None = None, status_code: int | None = None):
         if message is not None:
@@ -27,8 +28,10 @@ class ServiceError(Exception):
         super().__init__(self.message)
 
     def to_dict(self) -> dict:
-        """Return a JSON-serialisable error body."""
-        return {"error": self.message, "status_code": self.status_code}
+        """Return a JSON-serialisable error body matching the API spec:
+        ``{"error": "ErrorType", "message": "human-readable description"}``.
+        """
+        return {"error": self.error_type, "message": self.message}
 
 
 class NotFoundError(ServiceError):
@@ -36,6 +39,7 @@ class NotFoundError(ServiceError):
 
     status_code = 404
     message = "Resource not found"
+    error_type = "NotFound"
 
 
 class ValidationError(ServiceError):
@@ -43,19 +47,22 @@ class ValidationError(ServiceError):
 
     status_code = 400
     message = "Validation error"
+    error_type = "ValidationError"
 
 
 class ScriptValidationError(ValidationError):
     """Raised when an uploaded script fails security or syntax checks."""
 
     message = "Script validation failed"
+    error_type = "ValidationError"
 
 
 class DuplicateError(ServiceError):
-    """Raised when a uniqueness constraint is violated."""
+    """Raised when a uniqueness constraint is violated (409)."""
 
     status_code = 409
     message = "Resource already exists"
+    error_type = "BusinessError"
 
 
 class BusinessError(ServiceError):
@@ -63,18 +70,21 @@ class BusinessError(ServiceError):
 
     status_code = 409
     message = "Business rule violation"
+    error_type = "BusinessError"
 
 
 class InvalidTransitionError(BusinessError):
     """Raised when a state-machine transition is invalid."""
 
     message = "Invalid state transition"
+    error_type = "BusinessError"
 
 
 class DeviceNotAvailableError(BusinessError):
     """Raised when the requested device is offline or busy."""
 
     message = "Device not available"
+    error_type = "BusinessError"
 
 
 class AuthenticationError(ServiceError):
@@ -82,18 +92,19 @@ class AuthenticationError(ServiceError):
 
     status_code = 401
     message = "Authentication failed"
+    error_type = "AuthenticationError"
 
 
 # ---------------------------------------------------------------------------
 # Error handler registration
 # ---------------------------------------------------------------------------
 
-_service_error_map: dict[type[ServiceError], tuple[int, str]] = {}
+_service_error_classes: list[type[ServiceError]] = []
 
 
-def _build_error_map() -> None:
-    """Build a lookup from exception type to (status_code, default_message)."""
-    for cls in (
+def _build_error_list() -> None:
+    """Collect all ServiceError subclasses for handler registration."""
+    _service_error_classes.extend([
         ServiceError,
         NotFoundError,
         ValidationError,
@@ -103,8 +114,7 @@ def _build_error_map() -> None:
         InvalidTransitionError,
         DeviceNotAvailableError,
         AuthenticationError,
-    ):
-        _service_error_map[cls] = (cls.status_code, cls.message)
+    ])
 
 
 def register_error_handlers(app) -> None:
@@ -116,10 +126,10 @@ def register_error_handlers(app) -> None:
       - 405 (method not allowed)    → JSON.
       - 500 (unhandled exception)   → JSON with generic message.
     """
-    _build_error_map()
+    _build_error_list()
 
     # ---- ServiceError subclasses ----
-    for exc_cls in _service_error_map:
+    for exc_cls in _service_error_classes:
 
         def _make_handler(cls: type[ServiceError]):
             def handler(error: ServiceError):
@@ -134,15 +144,15 @@ def register_error_handlers(app) -> None:
 
     @app.errorhandler(404)
     def _handle_404(_error):
-        return jsonify({"error": "Not found", "status_code": 404}), 404
+        return jsonify({"error": "NotFound", "message": "Not found"}), 404
 
     @app.errorhandler(405)
     def _handle_405(_error):
-        return jsonify({"error": "Method not allowed", "status_code": 405}), 405
+        return jsonify({"error": "MethodNotAllowed", "message": "Method not allowed"}), 405
 
     @app.errorhandler(500)
     def _handle_500(_error):
         return (
-            jsonify({"error": "Internal server error", "status_code": 500}),
+            jsonify({"error": "InternalError", "message": "Internal server error"}),
             500,
         )

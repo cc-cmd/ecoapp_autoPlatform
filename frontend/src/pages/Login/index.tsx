@@ -14,6 +14,7 @@ const { Title } = Typography;
 const usernameRules = [
   { required: true, message: '请输入用户名' },
   { min: 3, message: '用户名至少3个字符' },
+  { max: 64, message: '用户名最多64个字符' },
 ];
 
 const passwordRules = [
@@ -42,13 +43,14 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (values: LoginRequest) => {
     setLoading(true);
     try {
-      // TODO: Implement actual login API call
       await authLogin(values);
       message.success('登录成功');
       navigate('/dashboard', { replace: true });
     } catch (error: unknown) {
-      // TODO: Handle specific error codes from API
-      const errMsg = error instanceof Error ? error.message : '登录失败，请检查用户名和密码';
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      const errMsg =
+        axiosError.response?.data?.message ||
+        '登录失败，请检查用户名和密码';
       message.error(errMsg);
     } finally {
       setLoading(false);
@@ -90,6 +92,7 @@ const LoginPage: React.FC = () => {
               placeholder="请输入用户名"
               size="large"
               autoFocus
+              disabled={loading}
             />
           </Form.Item>
 
@@ -102,6 +105,7 @@ const LoginPage: React.FC = () => {
               prefix={<LockOutlined />}
               placeholder="请输入密码"
               size="large"
+              disabled={loading}
             />
           </Form.Item>
 

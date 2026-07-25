@@ -61,7 +61,7 @@ class TestRegister:
             json={"username": username, "password": "Pass1234"},
         )
         assert resp.status_code == 409, resp.get_json()
-        assert "用户名已存在" in resp.get_json()["error"]
+        assert "用户名已存在" in resp.get_json()["message"]
 
     def test_register_weak_password(self, client: FlaskClient):
         """Register with a weak password returns 400."""
@@ -83,6 +83,47 @@ class TestRegister:
         resp = client.post(
             "/api/auth/register",
             json={"username": _unique_username(), "password": "12345678"},
+        )
+        assert resp.status_code == 400, resp.get_json()
+
+    def test_register_invalid_username_chars(self, client: FlaskClient):
+        """Register with invalid characters in username returns 400."""
+        # Space in username
+        resp = client.post(
+            "/api/auth/register",
+            json={"username": "user name", "password": "Pass1234"},
+        )
+        assert resp.status_code == 400, resp.get_json()
+
+        # Dot in username
+        resp = client.post(
+            "/api/auth/register",
+            json={"username": "user.name", "password": "Pass1234"},
+        )
+        assert resp.status_code == 400, resp.get_json()
+
+    def test_register_username_too_short(self, client: FlaskClient):
+        """Register with username < 3 chars returns 400."""
+        resp = client.post(
+            "/api/auth/register",
+            json={"username": "ab", "password": "Pass1234"},
+        )
+        assert resp.status_code == 400, resp.get_json()
+
+    def test_register_username_too_long(self, client: FlaskClient):
+        """Register with username > 64 chars returns 400."""
+        resp = client.post(
+            "/api/auth/register",
+            json={"username": "a" * 65, "password": "Pass1234"},
+        )
+        assert resp.status_code == 400, resp.get_json()
+
+    def test_register_non_json_content_type(self, client: FlaskClient):
+        """Register with non-JSON Content-Type returns 400."""
+        resp = client.post(
+            "/api/auth/register",
+            data="not json",
+            headers={"Content-Type": "text/plain"},
         )
         assert resp.status_code == 400, resp.get_json()
 
@@ -151,7 +192,7 @@ class TestLogin:
             json={"username": self.username, "password": "WrongPass1"},
         )
         assert resp.status_code == 401, resp.get_json()
-        assert "用户名或密码错误" in resp.get_json()["error"]
+        assert "用户名或密码错误" in resp.get_json()["message"]
 
     def test_login_nonexistent_user(self, client: FlaskClient):
         """Login with a non-existent username returns 401."""
@@ -160,7 +201,16 @@ class TestLogin:
             json={"username": _unique_username(), "password": "Pass1234"},
         )
         assert resp.status_code == 401, resp.get_json()
-        assert "用户名或密码错误" in resp.get_json()["error"]
+        assert "用户名或密码错误" in resp.get_json()["message"]
+
+    def test_login_non_json_content_type(self, client: FlaskClient):
+        """Login with non-JSON Content-Type returns 400."""
+        resp = client.post(
+            "/api/auth/login",
+            data="not json",
+            headers={"Content-Type": "text/plain"},
+        )
+        assert resp.status_code == 400, resp.get_json()
 
     def test_login_missing_fields(self, client: FlaskClient):
         """Login with missing fields returns 400."""
@@ -174,3 +224,16 @@ class TestLogin:
             json={"username": self.username},
         )
         assert resp.status_code == 400, resp.get_json()
+
+    def test_login_error_response_format(self, client: FlaskClient):
+        """Verify error response matches spec format: {error, message}."""
+        resp = client.post(
+            "/api/auth/login",
+            json={"username": self.username, "password": "WrongPass1"},
+        )
+        assert resp.status_code == 401
+        data = resp.get_json()
+        assert "error" in data, "Response must have 'error' field (error type)"
+        assert "message" in data, "Response must have 'message' field (human-readable)"
+        assert data["error"] == "AuthenticationError"
+        assert "用户名或密码错误" in data["message"]

@@ -56,8 +56,8 @@ def register():
 
     Responses:
         201 → { "user": {"id": "...", "username": "...", "created_at": "..."} }
-        400 → { "error": "...", "status_code": 400 }
-        409 → { "error": "...", "status_code": 409 }
+        400 → { "error": "ValidationError", "message": "..." }
+        409 → { "error": "BusinessError", "message": "..." }
 
         Note: Registration does NOT return a JWT token.
         The user must explicitly log in afterwards.
@@ -91,8 +91,8 @@ def login():
 
     Responses:
         200 → { "token": "...", "user": {"id": "...", "username": "..."} }
-        400 → { "error": "...", "status_code": 400 }
-        401 → { "error": "...", "status_code": 401 }
+        400 → { "error": "ValidationError", "message": "..." }
+        401 → { "error": "AuthenticationError", "message": "..." }
     """
     data = _parse_json_body()
 

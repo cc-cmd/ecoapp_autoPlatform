@@ -58,7 +58,7 @@ class User(db.Model):
         Args:
             password: Plain-text password.
         """
-        salt = bcrypt.gensalt()
+        salt = bcrypt.gensalt(rounds=12)
         self.password_hash = bcrypt.hashpw(password.encode(), salt).decode()
 
     def check_password(self, password: str) -> bool:
