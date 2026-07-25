@@ -91,3 +91,6 @@ cd frontend && npx vitest
 ## 设计文档
 
 详见 `documents/` 目录和 `CLAUDE.md`。
+
+<img width="1470" height="956" alt="image" src="https://github.com/user-attachments/assets/bb5ee0fb-3e65-4043-b50f-26e080b1e8f8" />
+
