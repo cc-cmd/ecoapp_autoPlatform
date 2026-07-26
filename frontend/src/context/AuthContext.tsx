@@ -15,7 +15,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   /** Authenticate with username & password. Stores token on success. */
   login: (data: LoginRequest) => Promise<void>;
-  /** Register a new account. Stores token on success. */
+  /** Register a new account. Does NOT auto-login — user must call login() separately. */
   register: (data: RegisterRequest) => Promise<void>;
   /** Clear auth state and remove stored credentials. */
   logout: () => Promise<void>;
@@ -52,11 +52,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = localStorage.getItem('auth_token');
       const storedUser = localStorage.getItem('auth_user');
       if (token && storedUser) {
-        const user = JSON.parse(storedUser) as User;
-        setState({ user, isAuthenticated: true, isLoading: false });
-      } else {
-        setState({ user: null, isAuthenticated: false, isLoading: false });
+        const parsed = JSON.parse(storedUser);
+        // Runtime validation: ensure stored user has required fields
+        if (
+          typeof parsed === 'object' && parsed !== null &&
+          typeof parsed.id === 'string' &&
+          typeof parsed.username === 'string'
+        ) {
+          const user: User = { id: parsed.id, username: parsed.username, created_at: parsed.created_at || '' };
+          setState({ user, isAuthenticated: true, isLoading: false });
+          return;
+        }
       }
+      setState({ user: null, isAuthenticated: false, isLoading: false });
     } catch {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
@@ -65,7 +73,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = useCallback(async (data: LoginRequest) => {
-    // TODO: Call API login, store token + user in localStorage, update state
     const response = await apiLogin(data);
     localStorage.setItem('auth_token', response.token);
     localStorage.setItem('auth_user', JSON.stringify(response.user));

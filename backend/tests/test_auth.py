@@ -237,3 +237,47 @@ class TestLogin:
         assert "message" in data, "Response must have 'message' field (human-readable)"
         assert data["error"] == "AuthenticationError"
         assert "用户名或密码错误" in data["message"]
+
+
+# ---------------------------------------------------------------------------
+# Seed data verification
+# ---------------------------------------------------------------------------
+
+
+class TestSeedData:
+    """Verify that the seeded initial data works correctly."""
+
+    def test_admin_login_success(self, client: FlaskClient):
+        """Seed admin account (admin/admin123) must be able to log in."""
+        resp = client.post(
+            "/api/auth/login",
+            json={"username": "admin", "password": "admin123"},
+        )
+        assert resp.status_code == 200, (
+            f"Seed admin login failed: {resp.get_json()}"
+        )
+        data = resp.get_json()
+        assert "token" in data
+        assert "user" in data
+        assert data["user"]["username"] == "admin"
+        assert data["user"]["id"] is not None
+        # Verify JWT can be used on a protected endpoint
+        token = data["token"]
+        protected_resp = client.get(
+            "/api/cases",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert protected_resp.status_code != 401, (
+            "Seed admin JWT should be accepted by protected endpoints"
+        )
+
+    def test_admin_wrong_password(self, client: FlaskClient):
+        """Seed admin login with wrong password returns 401."""
+        resp = client.post(
+            "/api/auth/login",
+            json={"username": "admin", "password": "wrongpassword"},
+        )
+        assert resp.status_code == 401
+        data = resp.get_json()
+        assert data["error"] == "AuthenticationError"
+        assert "用户名或密码错误" in data["message"]

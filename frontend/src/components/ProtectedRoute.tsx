@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Spin } from 'antd';
-import { useAuthContext } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Route guard component that checks authentication state.
@@ -10,7 +10,7 @@ import { useAuthContext } from '@/context/AuthContext';
  * - Renders the child route (Outlet) if authenticated.
  */
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuthContext();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (

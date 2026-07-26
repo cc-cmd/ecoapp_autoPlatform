@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, Form, Input, Button, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { isAxiosError } from 'axios';
 import { useAuth } from '@/hooks/useAuth';
 import type { LoginRequest } from '@/types';
 
@@ -47,11 +48,11 @@ const LoginPage: React.FC = () => {
       message.success('登录成功');
       navigate('/dashboard', { replace: true });
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      const errMsg =
-        axiosError.response?.data?.message ||
-        '登录失败，请检查用户名和密码';
-      message.error(errMsg);
+      if (isAxiosError(error) && error.response?.data?.message) {
+        message.error(error.response.data.message);
+      } else {
+        message.error('登录失败，请检查用户名和密码');
+      }
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,6 @@ const LoginPage: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          autoComplete="off"
           requiredMark={false}
         >
           <Form.Item
@@ -93,6 +93,7 @@ const LoginPage: React.FC = () => {
               size="large"
               autoFocus
               disabled={loading}
+              autoComplete="username"
             />
           </Form.Item>
 
@@ -104,6 +105,7 @@ const LoginPage: React.FC = () => {
             <Input.Password
               prefix={<LockOutlined />}
               placeholder="请输入密码"
+              autoComplete="current-password"
               size="large"
               disabled={loading}
             />

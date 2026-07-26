@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, Form, Input, Button, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { isAxiosError } from 'axios';
 import { useAuth } from '@/hooks/useAuth';
 import type { RegisterRequest } from '@/types';
 
@@ -42,25 +43,18 @@ const RegisterPage: React.FC = () => {
   const [registered, setRegistered] = useState(false);
   const [form] = Form.useForm<RegisterRequest & { confirmPassword: string }>();
 
-  const handleSubmit = async (values: RegisterRequest & { confirmPassword: string }) => {
-    // Client-side confirm password check
-    if (values.password !== values.confirmPassword) {
-      message.error('两次输入的密码不一致');
-      return;
-    }
-
+  const handleSubmit = async ({ username, password }: RegisterRequest) => {
     setLoading(true);
     try {
-      await authRegister({ username: values.username, password: values.password });
+      await authRegister({ username, password });
       setRegistered(true);
       message.success('注册成功！请前往登录');
-      form.resetFields();
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      const errMsg =
-        axiosError.response?.data?.message ||
-        '注册失败，请稍后重试';
-      message.error(errMsg);
+      if (isAxiosError(error) && error.response?.data?.message) {
+        message.error(error.response.data.message);
+      } else {
+        message.error('注册失败，请稍后重试');
+      }
     } finally {
       setLoading(false);
     }
@@ -112,7 +106,6 @@ const RegisterPage: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          autoComplete="off"
           requiredMark={false}
         >
           <Form.Item
@@ -126,6 +119,7 @@ const RegisterPage: React.FC = () => {
               size="large"
               autoFocus
               disabled={loading}
+              autoComplete="username"
             />
           </Form.Item>
 
@@ -137,6 +131,7 @@ const RegisterPage: React.FC = () => {
             <Input.Password
               prefix={<LockOutlined />}
               placeholder="请输入密码（至少8位，含字母和数字）"
+              autoComplete="new-password"
               size="large"
               disabled={loading}
             />
@@ -163,6 +158,7 @@ const RegisterPage: React.FC = () => {
               placeholder="请再次输入密码"
               size="large"
               disabled={loading}
+              autoComplete="new-password"
             />
           </Form.Item>
 

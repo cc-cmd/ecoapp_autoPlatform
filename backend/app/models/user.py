@@ -4,6 +4,7 @@ Stores authentication credentials and basic profile information.
 Passwords are hashed with bcrypt before persistence.
 """
 
+import unicodedata
 import uuid
 
 import bcrypt
@@ -55,11 +56,15 @@ class User(db.Model):
     def set_password(self, password: str) -> None:
         """Hash *password* with bcrypt and store it.
 
+        Passwords are NFC-normalised before hashing so that composed
+        and decomposed Unicode representations produce the same hash.
+
         Args:
             password: Plain-text password.
         """
+        normalized = unicodedata.normalize("NFC", password)
         salt = bcrypt.gensalt(rounds=12)
-        self.password_hash = bcrypt.hashpw(password.encode(), salt).decode()
+        self.password_hash = bcrypt.hashpw(normalized.encode(), salt).decode()
 
     def check_password(self, password: str) -> bool:
         """Verify *password* against the stored hash.
@@ -70,8 +75,9 @@ class User(db.Model):
         Returns:
             True if the password matches, False otherwise.
         """
+        normalized = unicodedata.normalize("NFC", password)
         return bcrypt.checkpw(
-            password.encode(), self.password_hash.encode()
+            normalized.encode(), self.password_hash.encode()
         )
 
     # ------------------------------------------------------------------

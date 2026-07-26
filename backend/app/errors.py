@@ -5,7 +5,7 @@ a single base type when desired. Each subclass maps to an HTTP status
 code returned via register_error_handlers().
 """
 
-from flask import jsonify
+from flask import current_app, jsonify, request
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +103,12 @@ _service_error_classes: list[type[ServiceError]] = []
 
 
 def _build_error_list() -> None:
-    """Collect all ServiceError subclasses for handler registration."""
+    """Collect all ServiceError subclasses for handler registration.
+
+    Idempotent — subsequent calls are no-ops.
+    """
+    if _service_error_classes:
+        return  # already built
     _service_error_classes.extend([
         ServiceError,
         NotFoundError,
@@ -133,6 +138,12 @@ def register_error_handlers(app) -> None:
 
         def _make_handler(cls: type[ServiceError]):
             def handler(error: ServiceError):
+                log_fn = (
+                    current_app.logger.warning
+                    if error.status_code < 500
+                    else current_app.logger.error
+                )
+                log_fn("%s: %s", error.error_type, error.message)
                 return jsonify(error.to_dict()), error.status_code
 
             handler.__name__ = f"handle_{cls.__name__}"
@@ -144,14 +155,19 @@ def register_error_handlers(app) -> None:
 
     @app.errorhandler(404)
     def _handle_404(_error):
+        current_app.logger.warning("Route not found: %s", request.path)
         return jsonify({"error": "NotFound", "message": "Not found"}), 404
 
     @app.errorhandler(405)
     def _handle_405(_error):
+        current_app.logger.warning(
+            "Method not allowed: %s %s", request.method, request.path
+        )
         return jsonify({"error": "MethodNotAllowed", "message": "Method not allowed"}), 405
 
     @app.errorhandler(500)
     def _handle_500(_error):
+        current_app.logger.exception("Internal server error")
         return (
             jsonify({"error": "InternalError", "message": "Internal server error"}),
             500,

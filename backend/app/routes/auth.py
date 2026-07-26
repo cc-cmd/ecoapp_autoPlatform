@@ -41,6 +41,8 @@ def _parse_json_body() -> dict:
     data = request.get_json(silent=True)
     if data is None:
         raise ValidationError("请求体不能为空")
+    if not isinstance(data, dict):
+        raise ValidationError("请求体必须为 JSON 对象")
     return data
 
 
@@ -71,8 +73,22 @@ def register():
         raise ValidationError("用户名和密码为必填项")
 
     auth_service = _get_auth_service()
-    user = auth_service.register(username, password)
-    db.session.commit()
+
+    try:
+        user = auth_service.register(username, password)
+    except ValidationError:
+        logger.warning("Registration validation failed: username=%s", username)
+        raise
+    except DuplicateError:
+        logger.warning("Registration duplicate: username=%s", username)
+        raise
+
+    try:
+        db.session.commit()
+    except Exception:
+        logger.exception("Database commit failed during registration")
+        db.session.rollback()
+        raise
 
     logger.info("User registered: %s (%s)", user.username, user.id)
 
@@ -103,7 +119,14 @@ def login():
         raise ValidationError("用户名和密码为必填项")
 
     auth_service = _get_auth_service()
-    user = auth_service.login(username, password)
+
+    try:
+        user = auth_service.login(username, password)
+    except AuthenticationError as e:
+        logger.warning(
+            "Login failed: username=%s, reason=%s", username, str(e)
+        )
+        raise
 
     # Generate JWT at the route layer (service stays framework-agnostic)
     access_token = create_access_token(identity=str(user.id))

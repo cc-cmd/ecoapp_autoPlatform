@@ -52,12 +52,19 @@ class BaseConfig:
     )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
 
+    # Logging
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    LOG_DIR = os.getenv("LOG_DIR", "logs")
+    LOG_FILE = "app.log"
+    LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+    LOG_BACKUP_COUNT = 10
+
 
 class DevelopmentConfig(BaseConfig):
     """Development environment configuration."""
 
     DEBUG = True
-    SQLALCHEMY_ECHO = True
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
 
 
 class TestingConfig(BaseConfig):
@@ -70,6 +77,7 @@ class TestingConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_ENGINE_OPTIONS = {}
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=3600)
+    LOG_LEVEL = "WARNING"
 
 
 class ProductionConfig(BaseConfig):

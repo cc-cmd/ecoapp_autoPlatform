@@ -5,7 +5,10 @@ JWT token generation is done at the route layer (this service is
 framework-agnostic).
 """
 
+import uuid
+
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DBSession
 
 from app.models.user import User
@@ -51,7 +54,11 @@ class AuthService:
         user = User(username=cleaned_username)
         user.set_password(password)
         self.db.add(user)
-        self.db.flush()
+        try:
+            self.db.flush()
+        except IntegrityError:
+            self.db.rollback()
+            raise DuplicateError("用户名已存在")
 
         return user
 
@@ -71,8 +78,9 @@ class AuthService:
         Raises:
             AuthenticationError: If credentials are invalid.
         """
-        # Query user by username
-        stmt = select(User).where(User.username == username.strip())
+        # Query user by username (validate_username strips + validates)
+        cleaned_username = validate_username(username)
+        stmt = select(User).where(User.username == cleaned_username)
         user = self.db.scalar(stmt)
 
         if user is None:
@@ -92,5 +100,12 @@ class AuthService:
 
         Returns:
             User instance or None if not found.
+
+        Raises:
+            ValidationError: If user_id is not a valid UUID.
         """
+        try:
+            uuid.UUID(user_id)
+        except (ValueError, AttributeError):
+            return None
         return self.db.get(User, user_id)

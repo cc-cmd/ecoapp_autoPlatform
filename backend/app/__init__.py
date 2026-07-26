@@ -39,6 +39,16 @@ def create_app(config_name: str | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config.get(config_name, config["development"]))
 
+    # Return Chinese characters as-is in JSON responses (not \uXXXX)
+    app.json.ensure_ascii = False
+
+    # ------------------------------------------------------------------
+    # Initialise logging (must come early so all subsequent code can log)
+    # ------------------------------------------------------------------
+    from .logging_config import init_logging
+
+    init_logging(app)
+
     # ------------------------------------------------------------------
     # Initialise extensions
     # ------------------------------------------------------------------
@@ -56,13 +66,6 @@ def create_app(config_name: str | None = None) -> Flask:
     from .errors import register_error_handlers
 
     register_error_handlers(app)
-
-    # ------------------------------------------------------------------
-    # Register logging hooks
-    # ------------------------------------------------------------------
-    from .logging_config import register_logging_hooks
-
-    register_logging_hooks(app)
 
     # ------------------------------------------------------------------
     # Register blueprints

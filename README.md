@@ -36,7 +36,7 @@ ecoapp_autoPlatform/
 │   │   ├── styles/                 # 全局样式
 │   │   ├── App.tsx                 # 路由配置 + ErrorBoundary
 │   │   └── main.tsx                # 入口（QueryClient + Auth + ConfigProvider）
-│   ├── vite.config.ts              # @/ alias, proxy /api → :5000
+│   ├── vite.config.ts              # @/ alias, proxy /api → :5001
 │   ├── tsconfig.json
 │   └── package.json
 ├── backend/                        # Flask 后端
@@ -105,7 +105,7 @@ flask db upgrade
 # 插入种子数据（默认管理员: admin / admin123）
 python scripts/seed.py
 
-# 启动开发服务器 (http://localhost:5000)
+# 启动开发服务器 (http://127.0.0.1:5001)
 python run.py
 ```
 
@@ -117,7 +117,7 @@ npm install
 npm run dev                         # 启动开发服务器 (http://localhost:5173)
 ```
 
-Vite 开发服务器自动将 `/api` 请求代理到后端 `http://localhost:5000`。
+Vite 开发服务器自动将 `/api` 请求代理到后端 `http://127.0.0.1:5001`。
 
 ### 4. 访问
 
@@ -224,7 +224,7 @@ npm run build                       # tsc + vite build → dist/
 ```bash
 # 使用 Gunicorn 启动
 cd backend
-gunicorn wsgi:app -w 4 -b 0.0.0.0:5000
+gunicorn wsgi:app -w 4 -b 0.0.0.0:5001
 
 # 前端构建并部署静态文件
 cd frontend
