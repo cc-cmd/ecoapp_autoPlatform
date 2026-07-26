@@ -44,8 +44,8 @@ ecoapp_autoPlatform/
 │   │   ├── __init__.py             # create_app() 工厂
 │   │   ├── config.py               # 三环境配置（开发/测试/生产）
 │   │   ├── extensions.py           # db, jwt, migrate 扩展
-│   │   ├── errors.py               # 统一错误处理
-│   │   ├── logging_config.py       # 请求/响应日志
+│   │   ├── errors.py               # 统一错误处理（ServiceError 9 子类 → JSON 异常响应）
+│   │   ├── logging_config.py       # 结构化 JSON 日志（request_id 全链路追踪）
 │   │   ├── scheduler.py            # APScheduler 定时任务
 │   │   ├── models/                 # 6 个 SQLAlchemy 模型
 │   │   ├── routes/                 # 6 个 Blueprint 路由
@@ -54,10 +54,11 @@ ecoapp_autoPlatform/
 │   │   └── utils/                  # 工具函数
 │   ├── migrations/                 # Flask-Migrate / Alembic
 │   ├── scripts/                    # seed.py（种子数据）+ init.sql
+│   ├── logs/                       # 结构化 JSON 日志（按会话命名，10MB × 10 轮转）
 │   ├── tests/                      # pytest 测试
 │   ├── .env.example
 │   ├── requirements.txt
-│   ├── run.py                      # 开发入口
+│   ├── run.py                      # 开发入口（load_dotenv → create_app）
 │   └── wsgi.py                     # 生产入口（Gunicorn）
 ├── .venv/                          # 共享 Python 虚拟环境
 ├── README.md
@@ -209,6 +210,8 @@ npm run build                       # tsc + vite build → dist/
 | 路由 + Service + API | ✅ 完成 |
 | 前端所有页面 + 组件 | ✅ 完成 |
 | 前端路由 + 认证守卫 | ✅ 完成 |
+| 日志系统 | ✅ 结构化 JSON（request_id 全链路追踪、stdout + 轮转文件） |
+| 异常体系 | ✅ ServiceError 9 子类（路由层统一捕获 → JSON 错误响应） |
 | 执行引擎（Executor） | ✅ 架构完成，待 Appium 真实联调 |
 | Scheduler（心跳 + 队列消费） | ❌ Stub（TODO 待实现） |
 | 后端测试 | ✅ test_auth, test_cases |
